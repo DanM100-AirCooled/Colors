@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amazing Porsche Color Viewer</title>
+    <title>Awesome Porsche Colors!</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,6 +20,58 @@
         }
         .controls {
             margin: 10px;
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .control-label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .switch {
+            display: inline-block;
+            position: relative;
+            width: 60px; /* Reduced size */
+            height: 20px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(38px); /* Adjusted for reduced switch size */
         }
         .category {
             width: 100%;
@@ -49,6 +101,9 @@
             margin-top: 10px;
             font-weight: bold;
         }
+        .spacer {
+            margin-right: 10px; /* Space between label and switch */
+        }
     </style>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -66,17 +121,39 @@
                     controls.classList.add("controls");
                     container.prepend(controls);
 
+                    // Shade Dropdown
+                    const dropdownGroup = document.createElement("div");
+                    dropdownGroup.classList.add("control-group");
+                    const dropdownLabel = document.createElement("div");
+                    dropdownLabel.classList.add("control-label");
+                    dropdownLabel.textContent = "Select Shade";
+                    dropdownGroup.appendChild(dropdownLabel);
+
                     const dropdown = document.createElement("select");
                     dropdown.id = "color-category-dropdown";
-                    controls.appendChild(dropdown);
+                    dropdownGroup.appendChild(dropdown);
+                    controls.appendChild(dropdownGroup);
 
-                    const sortSelect = document.createElement("select");
-                    sortSelect.id = "sort-options";
-                    sortSelect.innerHTML = `
-                        <option value="alphabetical">Sort Alphabetically</option>
-                        <option value="lightness">Sort Light to Dark</option>
-                    `;
-                    controls.appendChild(sortSelect);
+                    // Sort Toggle
+                    const switchGroup = document.createElement("div");
+                    switchGroup.classList.add("control-group");
+                    const sortLabel = document.createElement("div");
+                    sortLabel.classList.add("control-label");
+                    sortLabel.innerHTML = "<span class='spacer'>Sort: Alpha or Dark to Light</span>";
+                    switchGroup.appendChild(sortLabel);
+
+                    const sortSwitchContainer = document.createElement("label");
+                    sortSwitchContainer.classList.add("switch");
+                    const sortSwitch = document.createElement("input");
+                    sortSwitch.type = "checkbox";
+                    sortSwitch.id = "sort-switch";
+                    const slider = document.createElement("span");
+                    slider.classList.add("slider");
+
+                    sortSwitchContainer.appendChild(sortSwitch);
+                    sortSwitchContainer.appendChild(slider);
+                    switchGroup.appendChild(sortSwitchContainer);
+                    controls.appendChild(switchGroup);
 
                     let categories = {};
 
@@ -93,7 +170,7 @@
                     // Add dropdown options
                     const allOption = document.createElement("option");
                     allOption.value = "all";
-                    allOption.textContent = "Shade";
+                    allOption.textContent = "All Shades";
                     dropdown.appendChild(allOption);
                     for (const categoryName of Object.keys(categories)) {
                         const option = document.createElement("option");
@@ -103,24 +180,21 @@
                     }
 
                     // Function to sort colors
-                    function sortColors(colors, criteria) {
-                        if (criteria === "alphabetical") {
-                            return colors.sort((a, b) => a.name.localeCompare(b.name));
-                        } else if (criteria === "lightness") {
-                            return colors.sort((a, b) => b.lightness - a.lightness); // Light to dark
-                        }
-                        return colors;
+                    function sortColors(colors, sortLightToDark) {
+                        return sortLightToDark
+                            ? colors.sort((a, b) => a.lightness - b.lightness) // Light to dark
+                            : colors.sort((a, b) => a.name.localeCompare(b.name));
                     }
 
                     // Function to generate HTML for selected category
-                    function displayCategory(selectedCategory, sortOption) {
+                    function displayCategory(selectedCategory, sortLightToDark) {
                         container.querySelectorAll(".category").forEach(category => category.remove());
                         if (selectedCategory === "all") {
                             for (const [categoryName, colors] of Object.entries(categories)) {
-                                addCategoryToContainer(categoryName, sortColors(colors, sortOption));
+                                addCategoryToContainer(categoryName, sortColors(colors, sortLightToDark));
                             }
                         } else if (categories[selectedCategory]) {
-                            addCategoryToContainer(selectedCategory, sortColors(categories[selectedCategory], sortOption));
+                            addCategoryToContainer(selectedCategory, sortColors(categories[selectedCategory], sortLightToDark));
                         }
                     }
 
@@ -156,14 +230,14 @@
                     }
 
                     // Initial display of all categories, default to alphabetical
-                    displayCategory("all", "alphabetical");
+                    displayCategory("all", false);
 
                     // Event listeners for dropdown and sort options
                     dropdown.addEventListener("change", (e) => {
-                        displayCategory(e.target.value, sortSelect.value);
+                        displayCategory(e.target.value, sortSwitch.checked);
                     });
-                    sortSelect.addEventListener("change", (e) => {
-                        displayCategory(dropdown.value, e.target.value);
+                    sortSwitch.addEventListener("change", (e) => {
+                        displayCategory(dropdown.value, e.target.checked);
                     });
                 })
                 .catch(error => console.error("Error loading CSV file:", error));
@@ -171,7 +245,7 @@
     </script>
 </head>
 <body>
-    <h1 style="text-align:center;">Amazing Porsche Colors!</h1>
+    <h1 style="text-align:center;">Awesome Porsche Colors!</h1>
     <div class="container">
         <!-- Controls and Colors will be dynamically loaded here -->
     </div>
