@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Color Palette Showcase - Categorized</title>
+    <title>Amazing Porsche Color Viewer</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -17,6 +17,9 @@
             flex-direction: column;
             align-items: center;
             margin: 20px;
+        }
+        .controls {
+            margin: 10px;
         }
         .category {
             width: 100%;
@@ -49,7 +52,7 @@
     </style>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            fetch("Final_Categorized_Color_Data_with_Specific_Names7.csv")
+            fetch("Sorted_Colors_by_Shade_and_Lightness.csv")
                 .then(response => {
                     if (!response.ok) {
                         throw new Error("Network response was not ok");
@@ -59,25 +62,38 @@
                 .then(csvText => {
                     const rows = csvText.split("\n");
                     const container = document.querySelector(".container");
+                    const controls = document.createElement("div");
+                    controls.classList.add("controls");
+                    container.prepend(controls);
+
                     const dropdown = document.createElement("select");
                     dropdown.id = "color-category-dropdown";
-                    container.prepend(dropdown);
+                    controls.appendChild(dropdown);
+
+                    const sortSelect = document.createElement("select");
+                    sortSelect.id = "sort-options";
+                    sortSelect.innerHTML = `
+                        <option value="alphabetical">Sort Alphabetically</option>
+                        <option value="lightness">Sort Light to Dark</option>
+                    `;
+                    controls.appendChild(sortSelect);
+
                     let categories = {};
 
                     // Parse CSV data
                     rows.forEach((row, index) => {
                         if (index === 0 || row.trim() === "") return; // Skip header and empty rows
-                        const [colorName, hexCode, basicColor] = row.split(",");
+                        const [colorName, hexCode, basicColor, lightness] = row.split(",");
                         if (!categories[basicColor]) {
                             categories[basicColor] = [];
                         }
-                        categories[basicColor].push({ name: colorName, code: hexCode });
+                        categories[basicColor].push({ name: colorName, code: hexCode, lightness: parseFloat(lightness) });
                     });
 
                     // Add dropdown options
                     const allOption = document.createElement("option");
                     allOption.value = "all";
-                    allOption.textContent = "All Colors";
+                    allOption.textContent = "Shade";
                     dropdown.appendChild(allOption);
                     for (const categoryName of Object.keys(categories)) {
                         const option = document.createElement("option");
@@ -86,15 +102,25 @@
                         dropdown.appendChild(option);
                     }
 
+                    // Function to sort colors
+                    function sortColors(colors, criteria) {
+                        if (criteria === "alphabetical") {
+                            return colors.sort((a, b) => a.name.localeCompare(b.name));
+                        } else if (criteria === "lightness") {
+                            return colors.sort((a, b) => b.lightness - a.lightness); // Light to dark
+                        }
+                        return colors;
+                    }
+
                     // Function to generate HTML for selected category
-                    function displayCategory(selectedCategory) {
+                    function displayCategory(selectedCategory, sortOption) {
                         container.querySelectorAll(".category").forEach(category => category.remove());
                         if (selectedCategory === "all") {
                             for (const [categoryName, colors] of Object.entries(categories)) {
-                                addCategoryToContainer(categoryName, colors);
+                                addCategoryToContainer(categoryName, sortColors(colors, sortOption));
                             }
                         } else if (categories[selectedCategory]) {
-                            addCategoryToContainer(selectedCategory, categories[selectedCategory]);
+                            addCategoryToContainer(selectedCategory, sortColors(categories[selectedCategory], sortOption));
                         }
                     }
 
@@ -129,12 +155,15 @@
                         container.appendChild(categoryDiv);
                     }
 
-                    // Initial display of all categories
-                    displayCategory("all");
+                    // Initial display of all categories, default to alphabetical
+                    displayCategory("all", "alphabetical");
 
-                    // Event listener for dropdown change
+                    // Event listeners for dropdown and sort options
                     dropdown.addEventListener("change", (e) => {
-                        displayCategory(e.target.value);
+                        displayCategory(e.target.value, sortSelect.value);
+                    });
+                    sortSelect.addEventListener("change", (e) => {
+                        displayCategory(dropdown.value, e.target.value);
                     });
                 })
                 .catch(error => console.error("Error loading CSV file:", error));
@@ -142,9 +171,9 @@
     </script>
 </head>
 <body>
-    <h1 style="text-align:center;">Porsche Color Palette Showcase - Categorized</h1>
+    <h1 style="text-align:center;">Amazing Porsche Colors!</h1>
     <div class="container">
-        <!-- Colors will be dynamically loaded here -->
+        <!-- Controls and Colors will be dynamically loaded here -->
     </div>
 </body>
 </html>
